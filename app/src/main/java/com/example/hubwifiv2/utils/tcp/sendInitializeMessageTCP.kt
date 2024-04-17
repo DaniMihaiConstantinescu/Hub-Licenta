@@ -1,7 +1,6 @@
 package com.example.hubwifiv2.utils.tcp
 
-import android.util.Log
-import com.example.hubwifiv2.utils.dataClasses.TCPInitalizeMessage
+import com.example.hubwifiv2.utils.dataClasses.tcp.TCPInitalizeMessage
 import com.google.gson.Gson
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
