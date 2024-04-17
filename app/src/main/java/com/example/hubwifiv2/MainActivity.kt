@@ -25,12 +25,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.hubwifiv2.ui.theme.HubWifiV2Theme
 import com.example.hubwifiv2.utils.WifiHandler
+import com.example.hubwifiv2.utils.dataClasses.devices.GeneralDevice
 import com.example.hubwifiv2.utils.tcp.TCPClient
 import com.example.hubwifiv2.utils.tcp.getAndroidId
 import com.example.hubwifiv2.utils.tcp.sendInitializeMessageTCP
 import com.example.hubwifiv2.utils.tcp.sendMessageTCP
+import com.example.hubwifiv2.utils.viewModels.HubViewModel
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -46,7 +49,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         // initialize tcp server and wifi handler
-        tcpClient = TCPClient("192.168.1.104", 9090)
+        tcpClient = TCPClient("192.168.1.100", 9090)
         GlobalScope.launch {
             tcpClient.connectToServer()
             sendInitializeMessageTCP(tcpClient, getAndroidId(applicationContext))
@@ -67,6 +70,8 @@ class MainActivity : ComponentActivity() {
                     Column(modifier = Modifier.fillMaxSize()) {
                         TCPTest(tcpClient, applicationContext)
                         WiFis(wifiResults, isLoading)
+
+                        DevicesButtons(applicationContext)
                     }
 
                 }
@@ -110,7 +115,9 @@ fun TCPTest(
         mutableStateOf("")
     }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 50.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 50.dp)
     ) {
         TextField(value = text, onValueChange = {text = it})
         Button(onClick = {
@@ -121,4 +128,37 @@ fun TCPTest(
         }
     }
 
+}
+
+@Composable
+fun DevicesButtons(context: Context){
+
+    val deviceViewModel = viewModel<HubViewModel>()
+    val hubId = getAndroidId(context)
+
+    Row {
+        Button(onClick = {
+            deviceViewModel.addDeviceToHub(
+                hubId,
+                GeneralDevice(
+                    deviceMAC = "mac1",
+                    hubMac = hubId,
+                    type = "ac",
+                    name = "Device 1"
+                )
+            )
+        }) {
+            Text(text = "Add")
+        }
+
+
+        Button(onClick = {
+            deviceViewModel.deleteDeviceFromHub(
+                hubId,
+                "mac1"
+            )
+        }) {
+            Text(text = "Remove")
+        }
+    }
 }
