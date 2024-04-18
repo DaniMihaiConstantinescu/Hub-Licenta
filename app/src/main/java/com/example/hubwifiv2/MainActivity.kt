@@ -1,5 +1,6 @@
 package com.example.hubwifiv2
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.wifi.ScanResult
 import android.os.Bundle
@@ -10,11 +11,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -26,6 +26,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.hubwifiv2.ui.homepage.wifi.WiFiList
+import com.example.hubwifiv2.ui.homepage.wifi.WifiScreen
 import com.example.hubwifiv2.ui.theme.HubWifiV2Theme
 import com.example.hubwifiv2.utils.WifiHandler
 import com.example.hubwifiv2.utils.dataClasses.devices.GeneralDevice
@@ -45,6 +50,8 @@ class MainActivity : ComponentActivity() {
     private var wifiResults by mutableStateOf<List<ScanResult>>(emptyList())
     private var isLoading by mutableStateOf(false)
 
+    @OptIn(ExperimentalMaterial3Api::class)
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -66,14 +73,32 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    Scaffold {
+                        val navController = rememberNavController()
+                        NavHost(
+                            navController = navController,
+                            startDestination = "home"
+                        ){
+                            composable("home"){
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 20.dp)
+                                ) {
+                                    TCPTest(tcpClient, applicationContext)
+                                    DevicesButtons(applicationContext)
 
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        TCPTest(tcpClient, applicationContext)
-                        WiFis(wifiResults, isLoading)
-
-                        DevicesButtons(applicationContext)
+                                    WiFiList(wifiResults, isLoading, navController)
+                                }
+                            }
+                            composable("wifi/{addr}"){backStackEntry ->
+                                val addr = backStackEntry.arguments?.getString("addr")
+                                addr?.let {
+                                    WifiScreen(SSID = addr)
+                                }
+                            }
+                        }
                     }
-
                 }
             }
         }
@@ -87,21 +112,6 @@ class MainActivity : ComponentActivity() {
         tcpClient.disconnect()
     }
 
-}
-
-
-@Composable
-fun WiFis(wifiScanResults: List<ScanResult>, isLoading: Boolean) {
-    if (isLoading) {
-        Text(text = "Loading...")
-    } else {
-        // Display the list of Wi-Fi scan results
-        LazyColumn{
-            items(wifiScanResults){ wifi ->
-                Text(text = wifi.SSID)
-            }
-        }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -119,13 +129,13 @@ fun TCPTest(
             .fillMaxWidth()
             .padding(bottom = 50.dp)
     ) {
-        TextField(value = text, onValueChange = {text = it})
         Button(onClick = {
             val macAddr = getAndroidId(context)
             sendMessageTCP(tcpClient, macAddr, "1.1.1.1", mapOf("temp" to "20"))
         }) {
             Text(text = "Send")
         }
+        TextField(value = text, onValueChange = {text = it})
     }
 
 }
