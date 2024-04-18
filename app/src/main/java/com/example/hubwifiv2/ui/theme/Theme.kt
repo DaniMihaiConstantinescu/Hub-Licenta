@@ -16,9 +16,16 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = Orange58,
+    secondary = Orange69,
+    primaryContainer = Gray20,
+    secondaryContainer = Gray30,
+    onBackground = White100,
+    onPrimaryContainer = White100,
+    onSecondaryContainer = Gray74,
+    onPrimary = Gray15,
+    onSecondary = Gray10,
+    background = Gray12,
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -45,10 +52,10 @@ fun HubWifiV2Theme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
+//        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+//            val context = LocalContext.current
+//            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+//        }
 
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
