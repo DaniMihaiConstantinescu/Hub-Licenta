@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -65,7 +66,7 @@ fun HomeScreen(
                     showLoader = true
 
                     CoroutineScope(Dispatchers.Default).launch {
-                        delay(15000)
+                        delay(10000)
                         bluetoothScanner.stopScan()
 
                         enableRefresh = true
@@ -85,12 +86,23 @@ fun HomeScreen(
 
         LazyColumn{
             items(bluetoothResults.toList()) { device ->
-                Text(text = "address")
-                device.address?.let { it1 -> Text(text = it1) }
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp, horizontal = 6.dp)
+                    ) {
+                        Text(text = "address")
+                        device.address?.let { it1 -> Text(text = it1) }
 
-                Text(text = "name")
-                device.name?.let { it1 -> Text(text = it1) }
-                Spacer(modifier = Modifier.height(6.dp))
+                        Text(text = "name")
+                        device.name?.let { it1 -> Text(text = it1) }
+                    }
+                }
             }
         }
 
