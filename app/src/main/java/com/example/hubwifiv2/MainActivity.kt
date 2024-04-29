@@ -1,12 +1,12 @@
 package com.example.hubwifiv2
 
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothDevice
 import android.content.Context
-import android.net.wifi.ScanResult
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,14 +25,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.hubwifiv2.ui.homepage.wifi.WiFiList
+import com.example.hubwifiv2.ui.homepage.HomeScreen
 import com.example.hubwifiv2.ui.homepage.wifi.WifiScreen
 import com.example.hubwifiv2.ui.theme.HubWifiV2Theme
-import com.example.hubwifiv2.utils.wifi.WifiHandler
+import com.example.hubwifiv2.utils.ble.BluetoothScanner
+import com.example.hubwifiv2.utils.wifi.LocationPermission
 import com.example.hubwifiv2.utils.dataClasses.devices.GeneralDevice
 import com.example.hubwifiv2.utils.tcp.TCPClient
 import com.example.hubwifiv2.utils.tcp.getAndroidId
@@ -46,10 +49,11 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var tcpClient: TCPClient
 
-    private lateinit var wifiHandler: WifiHandler
-    private var wifiResults by mutableStateOf<List<ScanResult>>(emptyList())
-    private var isLoading by mutableStateOf(false)
+    private lateinit var locationPermission: LocationPermission
 
+    private val REQUEST_CODE_BLUETOOTH  = 101
+    private val bluetoothResults = mutableSetOf<BluetoothDevice>()
+    private lateinit var bluetoothScanner: BluetoothScanner
 
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -62,15 +66,15 @@ class MainActivity : ComponentActivity() {
             tcpClient.connectToServer()
             sendInitializeMessageTCP(tcpClient, getAndroidId(applicationContext))
         }
-        wifiHandler = WifiHandler(
-            this,
-            updateResults = { wifiResults = it },
-            changeLoading = { isLoading = it }
-        )
+
+        locationPermission = LocationPermission(this)
+
+        bluetoothScanner = BluetoothScanner(this)
+        bluetoothScanner.onDeviceFound = { device ->
+            bluetoothResults.add(device)
+        }
 
         setContent {
-
-
             HubWifiV2Theme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -83,16 +87,12 @@ class MainActivity : ComponentActivity() {
                             startDestination = "home"
                         ){
                             composable("home"){
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(horizontal = 20.dp)
-                                ) {
-                                    TCPTest(tcpClient, applicationContext)
-                                    DevicesButtons(applicationContext)
-
-                                    WiFiList(wifiResults, isLoading, navController)
-                                }
+                                HomeScreen(
+                                    tcpClient,
+                                    applicationContext,
+                                    bluetoothScanner,
+                                    bluetoothResults
+                                )
                             }
                             composable("wifi/{addr}"){backStackEntry ->
                                 val addr = backStackEntry.arguments?.getString("addr")
@@ -107,11 +107,44 @@ class MainActivity : ComponentActivity() {
         }
 
         // Check and request location permission
-        wifiHandler.checkAndRequestLocationPermission()
+        locationPermission.checkAndRequestLocationPermission()
+        requestBluetoothPermission()
     }
 
+
+    private fun requestBluetoothPermission() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.BLUETOOTH, android.Manifest.permission.BLUETOOTH_SCAN), REQUEST_CODE_BLUETOOTH)
+        } else {
+            // Permission already granted, proceed with scanning
+            // bluetoothScanner.startScan()
+        }
+    }
+
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_BLUETOOTH) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // bluetoothScanner.startScan()
+            } else {
+                // Handle permission denied case (optional)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        requestBluetoothPermission() // Request permission if needed
+    }
+    override fun onPause() {
+        super.onPause()
+        bluetoothScanner.stopScan() // Stop scanning when activity pauses
+    }
     override fun onDestroy() {
         super.onDestroy()
+        bluetoothScanner.stopScan()
         tcpClient.disconnect()
     }
 
