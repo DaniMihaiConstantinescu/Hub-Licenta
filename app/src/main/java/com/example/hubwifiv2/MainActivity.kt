@@ -32,7 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.hubwifiv2.ui.homepage.wifi.WiFiList
 import com.example.hubwifiv2.ui.homepage.wifi.WifiScreen
 import com.example.hubwifiv2.ui.theme.HubWifiV2Theme
-import com.example.hubwifiv2.utils.WifiHandler
+import com.example.hubwifiv2.utils.wifi.WifiHandler
 import com.example.hubwifiv2.utils.dataClasses.devices.GeneralDevice
 import com.example.hubwifiv2.utils.tcp.TCPClient
 import com.example.hubwifiv2.utils.tcp.getAndroidId
@@ -49,6 +49,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var wifiHandler: WifiHandler
     private var wifiResults by mutableStateOf<List<ScanResult>>(emptyList())
     private var isLoading by mutableStateOf(false)
+
 
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -68,6 +69,8 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
+
+
             HubWifiV2Theme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -113,6 +116,7 @@ class MainActivity : ComponentActivity() {
     }
 
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

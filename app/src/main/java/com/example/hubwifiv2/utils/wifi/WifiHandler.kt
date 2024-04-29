@@ -1,4 +1,4 @@
-package com.example.hubwifiv2.utils
+package com.example.hubwifiv2.utils.wifi
 
 import android.Manifest
 import android.annotation.SuppressLint

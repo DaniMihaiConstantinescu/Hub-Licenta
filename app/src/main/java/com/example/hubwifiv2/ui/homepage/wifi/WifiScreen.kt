@@ -1,5 +1,6 @@
 package com.example.hubwifiv2.ui.homepage.wifi
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,8 +21,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.hubwifiv2.utils.wifi.connectToHotspot
 
 @Composable
 fun WifiScreen(
@@ -40,7 +43,7 @@ fun WifiScreen(
             style = MaterialTheme.typography.headlineMedium
         )
 
-        if (showPass) Password()
+        if (showPass) Password(SSID)
 
 
     }
@@ -48,8 +51,9 @@ fun WifiScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Password(){
+fun Password(SSID: String){
     var password by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -76,7 +80,10 @@ fun Password(){
             horizontalArrangement = Arrangement.Center
         ) {
             Button(
-                onClick = { /*TODO: try to connect to wifi*/ },
+                onClick = { /*TODO: try to connect to wifi*/
+                    Log.e("WIFI", "Start try connect")
+                    connectToHotspot(context, SSID, password)
+                },
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.padding(vertical = 4.dp)
             ) {

@@ -21,22 +21,22 @@ fun WiFiList(
     navController: NavController
 ) {
 
-    val w = listOf("WiFi1", "WiFi2", "WiFi 3", "WiFi4")
-    LazyColumn{
-        items(w){ wifi ->
-            WifiCard(wifi, navController)
-        }
-    }
-
-//    if (isLoading) {
-//        Text(text = "Loading...")
-//    } else {
-//        LazyColumn{
-//            items(wifiScanResults){ wifi ->
-//                WifiCard(wifi.SSID)
-//            }
+//    val w = listOf("WiFi1", "WiFi2", "WiFi 3", "WiFi4")
+//    LazyColumn{
+//        items(w){ wifi ->
+//            WifiCard(wifi, navController)
 //        }
 //    }
+
+    if (isLoading) {
+        Text(text = "Loading...")
+    } else {
+        LazyColumn{
+            items(wifiScanResults){ wifi ->
+                WifiCard(wifi.SSID, navController)
+            }
+        }
+    }
 }
 
 @Composable
