@@ -14,11 +14,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,8 +30,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.hubwifiv2.DevicesButtons
 import com.example.hubwifiv2.TCPTest
+import com.example.hubwifiv2.ui.dialogs.SimpleConfirmationDialog
 import com.example.hubwifiv2.utils.ble.BluetoothScanner
 import com.example.hubwifiv2.utils.tcp.TCPClient
 import kotlinx.coroutines.CoroutineScope
@@ -35,16 +41,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@SuppressLint("MissingPermission")
 @Composable
 fun HomeScreen(
     tcpClient: TCPClient,
     context: Context,
+    navController: NavController,
     bluetoothScanner: BluetoothScanner,
-    bluetoothResults: Set<BluetoothDevice>
+    bluetoothResults: Set<BluetoothDevice>,
+    clearResults: () -> Unit
 ) {
-    var enableRefresh by remember { mutableStateOf(true) }
-    var showLoader by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -54,58 +59,110 @@ fun HomeScreen(
         TCPTest(tcpClient, context)
         DevicesButtons(context)
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Button(
-                onClick = {
-                    bluetoothScanner.startScan()
+        BluetoothPart(
+            bluetoothScanner,
+            bluetoothResults,
+            clearResults,
+            navController
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@SuppressLint("MissingPermission")
+@Composable
+fun BluetoothPart(
+    bluetoothScanner: BluetoothScanner,
+    bluetoothResults: Set<BluetoothDevice>,
+    clearResults: () -> Unit,
+    navController: NavController
+) {
+    var enableRefresh by remember { mutableStateOf(false) }
+    var deviceNames by remember { mutableStateOf(emptyMap<String, String>()) }
+
+    var showDialog by remember { mutableStateOf(false) }
+    if (!bluetoothScanner.isBluetoothEnabled())
+        showDialog = true
+
+    if (showDialog) {
+        SimpleConfirmationDialog(
+            onConfirmation = {
+                showDialog = false
+            },
+            dialogTitle = "Enable Bluetooth",
+            dialogText = "This app uses Bluetooth, so please enable it!",
+            icon = Icons.Default.Settings
+        )
+    }
+    
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Button(
+            onClick = {
+                clearResults()
+                bluetoothScanner.startScan()
+                enableRefresh = true
+
+                CoroutineScope(Dispatchers.Default).launch {
+                    delay(10000) // Stop scan after 10 seconds
+                    bluetoothScanner.stopScan()
+
                     enableRefresh = false
-                    showLoader = true
-
-                    CoroutineScope(Dispatchers.Default).launch {
-                        delay(10000)
-                        bluetoothScanner.stopScan()
-
-                        enableRefresh = true
-                        showLoader = false
-                    }
-                },
-                enabled = enableRefresh
-            ) {
-                Text(text = "Rescan")
-            }
-            if (showLoader)
-                CircularProgressIndicator(
-                    modifier = Modifier.width(24.dp)
-                )
+                }
+            },
+            enabled = !enableRefresh
+        ) {
+            Text(text = "Rescan")
         }
+        if (enableRefresh)
+            CircularProgressIndicator(
+                modifier = Modifier.width(24.dp)
+            )
+    }
 
-
-        LazyColumn{
-            items(bluetoothResults.toList()) { device ->
-                Card(
+    LazyColumn {
+        items(bluetoothResults.toList()) { device ->
+            val name = deviceNames[device.address]
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp, bottom = 4.dp),
+                onClick = {navController.navigate("device/${device.address}")}
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 4.dp, bottom = 4.dp)
+                        .padding(vertical = 4.dp, horizontal = 6.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp, horizontal = 6.dp)
-                    ) {
-                        Text(text = "address")
-                        device.address?.let { it1 -> Text(text = it1) }
+                    Text(text = "Address:")
+                    device.address?.let { address ->
+                        Text(text = address)
+                    }
 
-                        Text(text = "name")
-                        device.name?.let { it1 -> Text(text = it1) }
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = "Name: ")
+                        name?.let { deviceName ->
+                            Text(text = deviceName)
+                        }
                     }
                 }
             }
         }
-
     }
-    
+
+    LaunchedEffect(bluetoothResults) {
+        val names = mutableMapOf<String, String>()
+        bluetoothResults.forEach { device ->
+            val name = device.name ?: "Unknown"
+            names[device.address] = name
+        }
+        deviceNames = names
+    }
 }

@@ -27,6 +27,9 @@ class BluetoothScanner(private val context: Context) {
 
     var onDeviceFound: ((device: BluetoothDevice) -> Unit)? = null
 
+    fun isBluetoothEnabled(): Boolean {
+        return bluetoothAdapter?.isEnabled ?: false
+    }
 
     @SuppressLint("MissingPermission")
     fun startScan() {

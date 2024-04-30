@@ -32,7 +32,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.hubwifiv2.ui.homepage.HomeScreen
-import com.example.hubwifiv2.ui.homepage.wifi.WifiScreen
+import com.example.hubwifiv2.ui.homepage.devices.DeviceScreen
 import com.example.hubwifiv2.ui.theme.HubWifiV2Theme
 import com.example.hubwifiv2.utils.ble.BluetoothScanner
 import com.example.hubwifiv2.utils.wifi.LocationPermission
@@ -59,7 +59,6 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         // initialize tcp server and wifi handler
         tcpClient = TCPClient("192.168.1.100", 9090)
         GlobalScope.launch {
@@ -90,14 +89,18 @@ class MainActivity : ComponentActivity() {
                                 HomeScreen(
                                     tcpClient,
                                     applicationContext,
+                                    navController,
                                     bluetoothScanner,
-                                    bluetoothResults
+                                    bluetoothResults,
+                                    clearResults = {
+                                        bluetoothResults.clear()
+                                    }
                                 )
                             }
-                            composable("wifi/{addr}"){backStackEntry ->
+                            composable("device/{addr}"){backStackEntry ->
                                 val addr = backStackEntry.arguments?.getString("addr")
                                 addr?.let {
-                                    WifiScreen(SSID = addr)
+                                    DeviceScreen(SSID = addr)
                                 }
                             }
                         }
@@ -106,23 +109,27 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Check and request location permission
+        // Check and request location && bluetooth permissions
         locationPermission.checkAndRequestLocationPermission()
         requestBluetoothPermission()
     }
 
+    private fun checkBluetoothEnabled() {
+        if (bluetoothScanner.isBluetoothEnabled()) {
+            // Bluetooth is enabled, start scanning
+            bluetoothScanner.startScan()
+        } else {
+        }
+    }
 
     private fun requestBluetoothPermission() {
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.BLUETOOTH, android.Manifest.permission.BLUETOOTH_SCAN), REQUEST_CODE_BLUETOOTH)
         } else {
-            // Permission already granted, proceed with scanning
-            // bluetoothScanner.startScan()
+            checkBluetoothEnabled()
         }
     }
-
-
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CODE_BLUETOOTH) {
@@ -133,7 +140,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
     override fun onResume() {
         super.onResume()
         requestBluetoothPermission() // Request permission if needed
