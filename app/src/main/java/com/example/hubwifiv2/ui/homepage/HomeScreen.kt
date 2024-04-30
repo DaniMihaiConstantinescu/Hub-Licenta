@@ -126,31 +126,35 @@ fun BluetoothPart(
     LazyColumn {
         items(bluetoothResults.toList()) { device ->
             val name = deviceNames[device.address]
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp, bottom = 4.dp),
-                onClick = {navController.navigate("device/${device.address}")}
-            ) {
-                Column(
+
+            if (device.type == 2) {
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp, horizontal = 6.dp)
+                        .padding(top = 4.dp, bottom = 4.dp),
+                    onClick = { navController.navigate("device/${device.address}") }
                 ) {
-                    Text(text = "Address:")
-                    device.address?.let { address ->
-                        Text(text = address)
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp, horizontal = 6.dp)
                     ) {
-                        Text(text = "Name: ")
-                        name?.let { deviceName ->
-                            Text(text = deviceName)
+                        Text(text = "Address:")
+                        device.address?.let { address ->
+                            Text(text = address)
                         }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(text = "Name: ")
+                            name?.let { deviceName ->
+                                Text(text = deviceName)
+                            }
+                        }
+                        Text(text = "Type: ${device.type}")
                     }
                 }
             }
