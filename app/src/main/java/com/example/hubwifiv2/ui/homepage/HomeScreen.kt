@@ -107,7 +107,7 @@ fun BluetoothPart(
                 enableRefresh = true
 
                 CoroutineScope(Dispatchers.Default).launch {
-                    delay(10000) // Stop scan after 10 seconds
+                    delay(7000) // Stop scan after 7 seconds
                     bluetoothScanner.stopScan()
 
                     enableRefresh = false

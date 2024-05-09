@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
                             composable("device/{addr}"){backStackEntry ->
                                 val addr = backStackEntry.arguments?.getString("addr")
                                 addr?.let {
-                                    DeviceScreen(SSID = addr)
+                                    DeviceScreen(addr)
                                 }
                             }
                         }
@@ -124,8 +124,14 @@ class MainActivity : ComponentActivity() {
 
     private fun requestBluetoothPermission() {
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.BLUETOOTH, android.Manifest.permission.BLUETOOTH_SCAN), REQUEST_CODE_BLUETOOTH)
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
+            ) {
+            ActivityCompat.requestPermissions(this, arrayOf(
+                android.Manifest.permission.BLUETOOTH,
+                android.Manifest.permission.BLUETOOTH_SCAN,
+                android.Manifest.permission.BLUETOOTH_CONNECT
+            ), REQUEST_CODE_BLUETOOTH)
         } else {
             checkBluetoothEnabled()
         }
