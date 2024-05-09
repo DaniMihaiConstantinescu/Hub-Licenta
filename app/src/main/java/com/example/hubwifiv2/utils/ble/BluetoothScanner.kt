@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
-import android.util.Log
 
 class BluetoothScanner(private val context: Context) {
 
