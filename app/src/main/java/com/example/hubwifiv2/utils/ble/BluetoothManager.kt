@@ -18,6 +18,9 @@ import android.util.Log
 import java.util.UUID
 
 class BluetoothManager(context: Context) {
+
+    private var bluetoothGatt: BluetoothGatt? = null
+
     private val bluetoothAdapter: BluetoothAdapter? by lazy {
         val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothManager.adapter
@@ -30,6 +33,7 @@ class BluetoothManager(context: Context) {
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     Log.d(TAG, "Connected to GATT server.")
+                    bluetoothGatt = gatt
                     gatt?.discoverServices()
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
@@ -47,11 +51,10 @@ class BluetoothManager(context: Context) {
                 gatt?.setCharacteristicNotification(characteristic, true)
 
                 // After connecting to the device and discovering services
-                val writeCharacteristic = getCharacteristic(gatt, SERVICE_UUID, CHARACTERISTIC_WRITE_UUID)
-                writeCharacteristic?.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-                writeCharacteristic?.value = "Hello from Android!".toByteArray()
-                gatt?.writeCharacteristic(writeCharacteristic)
-
+//                val writeCharacteristic = getCharacteristic(gatt, SERVICE_UUID, CHARACTERISTIC_WRITE_UUID)
+//                writeCharacteristic?.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+//                writeCharacteristic?.value = "0".toByteArray()
+//                gatt?.writeCharacteristic(writeCharacteristic)
 
             } else {
                 Log.e(TAG, "onServicesDiscovered received: $status")
@@ -66,6 +69,18 @@ class BluetoothManager(context: Context) {
             }
         }
 
+    }
+
+    @SuppressLint("MissingPermission")
+    fun sendMessage(message: String) {
+        if (bluetoothGatt != null) {
+            val writeCharacteristic = getCharacteristic(bluetoothGatt, SERVICE_UUID, CHARACTERISTIC_WRITE_UUID)
+            writeCharacteristic?.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+            writeCharacteristic?.value = message.toByteArray()
+            bluetoothGatt?.writeCharacteristic(writeCharacteristic)
+        } else {
+            Log.e(TAG, "BluetoothGatt is not available. Ensure device is connected.")
+        }
     }
 
     private fun getCharacteristic(gatt: BluetoothGatt?, serviceUuid: UUID, characteristicUuid: UUID): BluetoothGattCharacteristic? {
