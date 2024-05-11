@@ -20,9 +20,6 @@ fun DeviceScreen(
     val bluetoothManager = BluetoothManager(context)
     bluetoothManager.scanForDevice(address)
 
-    val csvUtils = CSVUtils(context)
-    Log.e("CSV", csvUtils.readDataFromCSV().toString())
-
     Column {
         Text(text = address)
         Row {

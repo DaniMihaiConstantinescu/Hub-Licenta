@@ -54,16 +54,45 @@ class CSVUtils(private val context: Context) {
         }
     }
 
-    fun addRowToCSV(device: GeneralDevice) {
+    fun addDevice(device: GeneralDevice) {
         try {
             val file = File(context.filesDir, fileName)
-            FileWriter(file, true).use { writer ->
-                writer.append("${device.deviceMAC ?: ""},${device.hubMac ?: ""},${device.name ?: ""},${device.type ?: ""}\n")
+            val tempList = mutableListOf<GeneralDevice>()
+            var deviceAlreadyExists = false
+
+            BufferedReader(FileReader(file)).use { reader ->
+                var line: String?
+                while (reader.readLine().also { line = it } != null) {
+                    val tokens = line?.split(",")
+                    if (tokens?.size ?: 0 >= 4 && tokens?.getOrNull(0) == device.deviceMAC) {
+                        // Update the existing device with the new one
+                        tempList.add(device)
+                        deviceAlreadyExists = true
+                    } else {
+                        tempList.add(
+                            GeneralDevice(
+                                tokens?.getOrNull(0) ?: "",
+                                tokens?.getOrNull(1) ?: "",
+                                tokens?.getOrNull(2) ?: "",
+                                tokens?.getOrNull(3) ?: ""
+                            )
+                        )
+                    }
+                }
             }
+
+            // If the device doesn't already exist, add it to tempList
+            if (!deviceAlreadyExists) {
+                tempList.add(device)
+            }
+
+            // Write the updated tempList to the file
+            writeDataToCSV(tempList)
         } catch (e: Exception) {
-            Log.e("CSVUtils", "Error adding row to CSV: ${e.message}")
+            Log.e("CSVUtils", "Error checking for device: ${e.message}")
         }
     }
+
 
     fun removeRowFromCSV(deviceMAC: String) {
         try {
@@ -90,4 +119,5 @@ class CSVUtils(private val context: Context) {
             Log.e("CSVUtils", "Error removing row from CSV: ${e.message}")
         }
     }
+
 }

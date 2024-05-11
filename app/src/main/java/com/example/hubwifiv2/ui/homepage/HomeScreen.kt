@@ -50,7 +50,6 @@ fun HomeScreen(
     bluetoothResults: Set<BluetoothDevice>,
     clearResults: () -> Unit
 ) {
-
     Column(
         modifier = Modifier
             .fillMaxSize()
