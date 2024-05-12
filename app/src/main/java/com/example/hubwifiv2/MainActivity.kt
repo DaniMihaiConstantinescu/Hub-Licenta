@@ -36,7 +36,7 @@ import com.example.hubwifiv2.ui.homepage.devices.AllDevicesScreen
 import com.example.hubwifiv2.ui.homepage.devices.DeviceScreen
 import com.example.hubwifiv2.ui.theme.HubWifiV2Theme
 import com.example.hubwifiv2.utils.ble.BluetoothScanner
-import com.example.hubwifiv2.utils.wifi.LocationPermission
+import com.example.hubwifiv2.utils.permissionHandling.LocationPermission
 import com.example.hubwifiv2.utils.dataClasses.devices.GeneralDevice
 import com.example.hubwifiv2.utils.tcp.TCPClient
 import com.example.hubwifiv2.utils.tcp.getAndroidId

@@ -1,4 +1,4 @@
-package com.example.hubwifiv2.utils.wifi
+package com.example.hubwifiv2.utils.permissionHandling
 
 import android.Manifest
 import android.content.pm.PackageManager

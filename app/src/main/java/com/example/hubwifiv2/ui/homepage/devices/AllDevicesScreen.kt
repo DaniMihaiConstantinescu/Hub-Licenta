@@ -1,6 +1,5 @@
 package com.example.hubwifiv2.ui.homepage.devices
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.hubwifiv2.utils.csv.CSVUtils
 import com.example.hubwifiv2.utils.dataClasses.devices.GeneralDevice
-import com.example.hubwifiv2.utils.tcp.getAndroidId
 import com.example.hubwifiv2.utils.viewModels.HubViewModel
 
 @Composable
@@ -41,7 +39,6 @@ fun AllDevicesScreen(){
     val deviceViewModel = viewModel<HubViewModel>()
 
     var devices by remember { mutableStateOf(csvUtils.readDataFromCSV()) }
-//    var devices = csvUtils.readDataFromCSV()
 
     Column(
         modifier = Modifier
@@ -51,7 +48,7 @@ fun AllDevicesScreen(){
 
         Text(text = "All Devices")
 
-        LazyColumn(){
+        LazyColumn{
             items(devices){device ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -66,22 +63,7 @@ fun AllDevicesScreen(){
                     }) {
                         Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete Device")
                     }
-
-                    Card {
-                        Column(
-                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 10.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(text = device.name, fontWeight = FontWeight.Bold)
-                                Text(text = device.type)
-                            }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(text = "Address: ${device.deviceMAC}")
-                        }
-                    }
+                    DeviceCard(device)
                     Spacer(modifier = Modifier.height(4.dp))
                 }
             }
@@ -89,4 +71,23 @@ fun AllDevicesScreen(){
 
     }
 
+}
+
+@Composable
+fun DeviceCard(device: GeneralDevice){
+    Card {
+        Column(
+            modifier = Modifier.padding(vertical = 8.dp, horizontal = 10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = device.name, fontWeight = FontWeight.Bold)
+                Text(text = device.type)
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(text = "Address: ${device.deviceMAC}")
+        }
+    }
 }

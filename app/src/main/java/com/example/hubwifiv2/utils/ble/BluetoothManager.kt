@@ -21,6 +21,12 @@ class BluetoothManager(
     context: Context,
     setType: (type: String) -> Unit
 ) {
+    companion object {
+        private const val TAG = "BluetoothManager"
+        private val SERVICE_UUID = UUID.fromString("4fafc201-1fb5-459e-8fcc-c5c9c331914b")
+        private val CHARACTERISTIC_UUID = UUID.fromString("beb5483e-36e1-4688-b7f5-ea07361b26a8")
+        private val CHARACTERISTIC_WRITE_UUID = UUID.fromString("3b486277-d8fe-4757-96ec-b465c0aca0f5")
+    }
 
     private var bluetoothGatt: BluetoothGatt? = null
 
@@ -93,14 +99,6 @@ class BluetoothManager(
         val service: BluetoothGattService? = gatt?.getService(serviceUuid)
         return service?.getCharacteristic(characteristicUuid)
     }
-
-    companion object {
-        private const val TAG = "BluetoothManager"
-        private val SERVICE_UUID = UUID.fromString("4fafc201-1fb5-459e-8fcc-c5c9c331914b")
-        private val CHARACTERISTIC_UUID = UUID.fromString("beb5483e-36e1-4688-b7f5-ea07361b26a8")
-        private val CHARACTERISTIC_WRITE_UUID = UUID.fromString("3b486277-d8fe-4757-96ec-b465c0aca0f5")
-    }
-
 
     @SuppressLint("MissingPermission")
     fun connectToDevice(device: BluetoothDevice, context: Context) {

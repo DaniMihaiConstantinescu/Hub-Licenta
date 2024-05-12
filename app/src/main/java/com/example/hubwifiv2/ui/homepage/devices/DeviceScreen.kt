@@ -129,6 +129,5 @@ fun addDevice(
     csvUtils.addDevice(newDevice)
     deviceViewModel.addDeviceToHub(hubID, newDevice)
 
-    // navigate to homepage after adding to csv and db
     navController.navigate("home")
 }
