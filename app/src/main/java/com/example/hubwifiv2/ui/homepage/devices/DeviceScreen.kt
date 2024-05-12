@@ -1,11 +1,12 @@
 package com.example.hubwifiv2.ui.homepage.devices
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.magnifier
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,13 +19,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.hubwifiv2.utils.ble.BluetoothManager
+import com.example.hubwifiv2.utils.csv.CSVUtils
+import com.example.hubwifiv2.utils.dataClasses.devices.GeneralDevice
+import com.example.hubwifiv2.utils.tcp.getAndroidId
+import com.example.hubwifiv2.utils.viewModels.HubViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission")
 @Composable
 fun DeviceScreen(
-    address: String
+    address: String,
+    navController: NavController
 ){
     var startedConnect by remember { mutableStateOf(false) }
     var isConnecting by remember { mutableStateOf(false) }
@@ -36,16 +44,16 @@ fun DeviceScreen(
         isConnecting = false
         deviceType = type
     })
+    val deviceViewModel = viewModel<HubViewModel>()
 
     Column {
         Text(text = address)
 
         if (!startedConnect || isConnecting) {
-            Button(onClick = {
+            Button(enabled = !isConnecting ,onClick = {
                 bluetoothManager.scanForDevice(address)
                 startedConnect = true
                 isConnecting = true
-
             }) {
                 Text(text = "Connect")
             }
@@ -69,9 +77,18 @@ fun DeviceScreen(
                         Text(text = "Device name:")
                         TextField(value = deviceName, onValueChange = {deviceName = it})
                     }
-                    Button(onClick = { /*TODO*/ }) {
+                    Button(onClick = {
+                        if (deviceName == "") {
+                            Toast.makeText(context, "The name of the device needs to be completed", Toast.LENGTH_SHORT).show()
+                        }
+                        else{
+                            addDevice(context, navController, deviceViewModel, address, deviceName, deviceType)
+                        }
+                    }) {
                         Text(text = "Add Device")
                     }
+
+
 
                     Row {
                         Button(onClick = { bluetoothManager.sendMessage("0") }) {
@@ -89,4 +106,29 @@ fun DeviceScreen(
         }
     }
 
+}
+
+fun addDevice(
+    context:Context,
+    navController: NavController,
+    deviceViewModel: HubViewModel,
+    address: String,
+    deviceName: String,
+    deviceType: String
+) {
+    // add to csv and to db
+    val csvUtils = CSVUtils(context)
+    val hubID = getAndroidId(context)
+
+    val newDevice = GeneralDevice(
+        deviceMAC =  address,
+        hubMac = hubID,
+        name =  deviceName,
+        type =  deviceType
+    )
+    csvUtils.addDevice(newDevice)
+    deviceViewModel.addDeviceToHub(hubID, newDevice)
+
+    // navigate to homepage after adding to csv and db
+    navController.navigate("home")
 }

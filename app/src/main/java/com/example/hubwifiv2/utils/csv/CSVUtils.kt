@@ -41,42 +41,40 @@ class CSVUtils(private val context: Context) {
         return deviceList
     }
 
-    fun writeDataToCSV(deviceList: List<GeneralDevice>) {
-        try {
-            val file = File(context.filesDir, fileName)
-            FileWriter(file).use { writer ->
-                deviceList.forEach { device ->
-                    writer.append("${device.deviceMAC ?: ""},${device.hubMac ?: ""},${device.name ?: ""},${device.type ?: ""}\n")
-                }
+    private fun writeDataToCSV(data: List<GeneralDevice>) {
+        val file = File(context.filesDir, fileName)
+        FileWriter(file).use { writer ->
+            data.forEach { device ->
+                writer.append("${device.deviceMAC},${device.hubMac},${device.name},${device.type}\n")
             }
-        } catch (e: Exception) {
-            Log.e("CSVUtils", "Error writing CSV: ${e.message}")
         }
     }
 
     fun addDevice(device: GeneralDevice) {
         try {
             val file = File(context.filesDir, fileName)
-            val tempList = mutableListOf<GeneralDevice>()
+            var tempList = mutableListOf<GeneralDevice>()
             var deviceAlreadyExists = false
 
-            BufferedReader(FileReader(file)).use { reader ->
-                var line: String?
-                while (reader.readLine().also { line = it } != null) {
-                    val tokens = line?.split(",")
-                    if (tokens?.size ?: 0 >= 4 && tokens?.getOrNull(0) == device.deviceMAC) {
-                        // Update the existing device with the new one
-                        tempList.add(device)
-                        deviceAlreadyExists = true
-                    } else {
-                        tempList.add(
-                            GeneralDevice(
-                                tokens?.getOrNull(0) ?: "",
-                                tokens?.getOrNull(1) ?: "",
-                                tokens?.getOrNull(2) ?: "",
-                                tokens?.getOrNull(3) ?: ""
+            if (file.exists()) {
+                BufferedReader(FileReader(file)).use { reader ->
+                    var line: String?
+                    while (reader.readLine().also { line = it } != null) {
+                        val tokens = line?.split(",")
+                        if (tokens?.size ?: 0 >= 4 && tokens?.getOrNull(0) == device.deviceMAC) {
+                            // Update the existing device with the new one
+                            tempList.add(device)
+                            deviceAlreadyExists = true
+                        } else {
+                            tempList.add(
+                                GeneralDevice(
+                                    tokens?.getOrNull(0) ?: "",
+                                    tokens?.getOrNull(1) ?: "",
+                                    tokens?.getOrNull(2) ?: "",
+                                    tokens?.getOrNull(3) ?: ""
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -92,7 +90,6 @@ class CSVUtils(private val context: Context) {
             Log.e("CSVUtils", "Error checking for device: ${e.message}")
         }
     }
-
 
     fun removeRowFromCSV(deviceMAC: String) {
         try {

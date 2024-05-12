@@ -32,6 +32,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.hubwifiv2.ui.homepage.HomeScreen
+import com.example.hubwifiv2.ui.homepage.devices.AllDevicesScreen
 import com.example.hubwifiv2.ui.homepage.devices.DeviceScreen
 import com.example.hubwifiv2.ui.theme.HubWifiV2Theme
 import com.example.hubwifiv2.utils.ble.BluetoothScanner
@@ -60,7 +61,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // initialize tcp server and wifi handler
-        tcpClient = TCPClient("192.168.1.100", 9090)
+        tcpClient = TCPClient("192.168.1.103", 9090)
         GlobalScope.launch {
             tcpClient.connectToServer()
             sendInitializeMessageTCP(tcpClient, getAndroidId(applicationContext))
@@ -100,8 +101,11 @@ class MainActivity : ComponentActivity() {
                             composable("device/{addr}"){backStackEntry ->
                                 val addr = backStackEntry.arguments?.getString("addr")
                                 addr?.let {
-                                    DeviceScreen(addr)
+                                    DeviceScreen(addr, navController)
                                 }
+                            }
+                            composable("all-devices"){
+                                AllDevicesScreen()
                             }
                         }
                     }

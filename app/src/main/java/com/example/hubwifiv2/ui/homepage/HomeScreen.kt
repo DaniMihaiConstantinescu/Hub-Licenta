@@ -58,6 +58,10 @@ fun HomeScreen(
         TCPTest(tcpClient, context)
         DevicesButtons(context)
 
+        Button(onClick = { navController.navigate("all-devices") }) {
+            Text(text = "Connected devices")
+        }
+        
         BluetoothPart(
             bluetoothScanner,
             bluetoothResults,
