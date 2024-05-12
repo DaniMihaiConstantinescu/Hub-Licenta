@@ -172,9 +172,7 @@ fun TCPTest(
     context: Context
 ){
 
-    var text by remember {
-        mutableStateOf("")
-    }
+    var text by remember { mutableStateOf("") }
     Row(
         modifier = Modifier
             .fillMaxWidth()

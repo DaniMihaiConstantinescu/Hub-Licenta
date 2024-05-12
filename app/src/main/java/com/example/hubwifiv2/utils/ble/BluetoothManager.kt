@@ -17,7 +17,10 @@ import android.content.Context
 import android.util.Log
 import java.util.UUID
 
-class BluetoothManager(context: Context) {
+class BluetoothManager(
+    context: Context,
+    setType: (type: String) -> Unit
+) {
 
     private var bluetoothGatt: BluetoothGatt? = null
 
@@ -50,11 +53,8 @@ class BluetoothManager(context: Context) {
                 val characteristic = getCharacteristic(gatt, SERVICE_UUID, CHARACTERISTIC_UUID)
                 gatt?.setCharacteristicNotification(characteristic, true)
 
-                // After connecting to the device and discovering services
-//                val writeCharacteristic = getCharacteristic(gatt, SERVICE_UUID, CHARACTERISTIC_WRITE_UUID)
-//                writeCharacteristic?.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-//                writeCharacteristic?.value = "0".toByteArray()
-//                gatt?.writeCharacteristic(writeCharacteristic)
+                // send mess to get initial type
+                sendMessage("0")
 
             } else {
                 Log.e(TAG, "onServicesDiscovered received: $status")
@@ -66,6 +66,12 @@ class BluetoothManager(context: Context) {
             characteristic?.let {
                 val message = String(it.value)
                 Log.i(TAG, "Message received from BLE device: $message")
+
+                // verify if it is init message
+                val type = BLEUtils.extractType(message)
+                if ( type != null ){
+                    setType(type)
+                }
             }
         }
 
