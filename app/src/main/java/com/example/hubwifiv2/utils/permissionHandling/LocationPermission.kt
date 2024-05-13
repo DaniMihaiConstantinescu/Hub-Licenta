@@ -9,8 +9,6 @@ import androidx.core.app.ActivityCompat
 class LocationPermission(
     private val activity: ComponentActivity
 ) {
-
-
     private val requestPermissionLauncher = activity.registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) {
             // Permission granted

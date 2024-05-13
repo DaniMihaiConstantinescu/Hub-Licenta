@@ -17,9 +17,12 @@ import android.content.Context
 import android.util.Log
 import java.util.UUID
 
+@SuppressLint("MissingPermission")
 class BluetoothManager(
     context: Context,
-    setType: (type: String) -> Unit
+    initialize: Boolean,
+    setType: ((type: String) -> Unit),
+    val messageToSend: String? = null
 ) {
     companion object {
         private const val TAG = "BluetoothManager"
@@ -36,7 +39,6 @@ class BluetoothManager(
     }
 
     private val gattCallback = object : BluetoothGattCallback() {
-        @SuppressLint("MissingPermission")
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
             super.onConnectionStateChange(gatt, status, newState)
             when (newState) {
@@ -51,7 +53,6 @@ class BluetoothManager(
             }
         }
 
-        @SuppressLint("MissingPermission")
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
             super.onServicesDiscovered(gatt, status)
             if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -59,8 +60,16 @@ class BluetoothManager(
                 val characteristic = getCharacteristic(gatt, SERVICE_UUID, CHARACTERISTIC_UUID)
                 gatt?.setCharacteristicNotification(characteristic, true)
 
-                // send mess to get initial type
-                sendMessage("0")
+
+                // send mess to get initial type if needed
+                if (initialize)
+                    sendMessage("0")
+
+                // forward message if needed
+                if (messageToSend != null){
+                    sendMessage(messageToSend)
+                    disconnect()
+                }
 
             } else {
                 Log.e(TAG, "onServicesDiscovered received: $status")
@@ -77,13 +86,13 @@ class BluetoothManager(
                 val type = BLEUtils.extractType(message)
                 if ( type != null ){
                     setType(type)
+                    disconnect()
                 }
             }
         }
 
     }
 
-    @SuppressLint("MissingPermission")
     fun sendMessage(message: String) {
         if (bluetoothGatt != null) {
             val writeCharacteristic = getCharacteristic(bluetoothGatt, SERVICE_UUID, CHARACTERISTIC_WRITE_UUID)
@@ -95,24 +104,28 @@ class BluetoothManager(
         }
     }
 
+    fun disconnect() {
+        bluetoothGatt?.disconnect()
+        bluetoothGatt?.close()
+        bluetoothGatt = null
+        Log.d(TAG, "Disconnected to GATT server.")
+    }
+
     private fun getCharacteristic(gatt: BluetoothGatt?, serviceUuid: UUID, characteristicUuid: UUID): BluetoothGattCharacteristic? {
         val service: BluetoothGattService? = gatt?.getService(serviceUuid)
         return service?.getCharacteristic(characteristicUuid)
     }
 
-    @SuppressLint("MissingPermission")
     fun connectToDevice(device: BluetoothDevice, context: Context) {
         device.connectGatt( context, false, gattCallback)
     }
 
     private val scanCallback = object : ScanCallback() {
-        @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             stopScan()
             connectToDevice(result.device, context)
         }
     }
-    @SuppressLint("MissingPermission")
     fun scanForDevice(address: String) {
         val filter = ScanFilter.Builder().setDeviceAddress(address).build()
         val scanSettings = ScanSettings.Builder().build()
@@ -120,7 +133,6 @@ class BluetoothManager(
         bluetoothAdapter?.bluetoothLeScanner?.startScan(listOf(filter), scanSettings, scanCallback)
     }
 
-    @SuppressLint("MissingPermission")
     fun stopScan() {
         bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback)
     }

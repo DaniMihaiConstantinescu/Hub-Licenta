@@ -40,7 +40,7 @@ fun DeviceScreen(
     var deviceName by remember { mutableStateOf("") }
     
     val context = LocalContext.current
-    val bluetoothManager = BluetoothManager(context, setType = {type ->
+    val bluetoothManager = BluetoothManager(context, true, setType = {type ->
         isConnecting = false
         deviceType = type
     })

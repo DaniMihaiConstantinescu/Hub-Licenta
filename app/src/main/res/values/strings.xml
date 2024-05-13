@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">HubApp</string>
+    <string name="server_ip">192.168.1.103</string>
 </resources>

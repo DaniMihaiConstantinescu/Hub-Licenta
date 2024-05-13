@@ -50,25 +50,29 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var tcpClient: TCPClient
 
-    private lateinit var locationPermission: LocationPermission
-
     private val REQUEST_CODE_BLUETOOTH  = 101
     private val bluetoothResults = mutableSetOf<BluetoothDevice>()
     private lateinit var bluetoothScanner: BluetoothScanner
+
+    private lateinit var locationPermission: LocationPermission
 
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        locationPermission = LocationPermission(this)
+
         // initialize tcp server and wifi handler
-        tcpClient = TCPClient("192.168.1.103", 9090)
+//        tcpClient = TCPClient("192.168.1.103", 9090)
+
+        tcpClient = TCPClient(applicationContext ,applicationContext.getString(R.string.server_ip), 9090)
+
         GlobalScope.launch {
             tcpClient.connectToServer()
             sendInitializeMessageTCP(tcpClient, getAndroidId(applicationContext))
         }
-
-        locationPermission = LocationPermission(this)
-
+        
         bluetoothScanner = BluetoothScanner(this)
         bluetoothScanner.onDeviceFound = { device ->
             bluetoothResults.add(device)
@@ -154,11 +158,11 @@ class MainActivity : ComponentActivity() {
     }
     override fun onResume() {
         super.onResume()
-        requestBluetoothPermission() // Request permission if needed
+        requestBluetoothPermission()
     }
     override fun onPause() {
         super.onPause()
-        bluetoothScanner.stopScan() // Stop scanning when activity pauses
+        bluetoothScanner.stopScan()
     }
     override fun onDestroy() {
         super.onDestroy()
