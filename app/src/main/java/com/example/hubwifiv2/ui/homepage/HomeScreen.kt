@@ -2,7 +2,6 @@ package com.example.hubwifiv2.ui.homepage
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
-import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,11 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.hubwifiv2.DevicesButtons
-import com.example.hubwifiv2.TCPTest
 import com.example.hubwifiv2.ui.dialogs.SimpleConfirmationDialog
 import com.example.hubwifiv2.utils.ble.BluetoothScanner
-import com.example.hubwifiv2.utils.tcp.TCPClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -43,8 +39,6 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
-    tcpClient: TCPClient,
-    context: Context,
     navController: NavController,
     bluetoothScanner: BluetoothScanner,
     bluetoothResults: Set<BluetoothDevice>,
@@ -55,13 +49,12 @@ fun HomeScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp)
     ) {
-        TCPTest(tcpClient, context)
-        DevicesButtons(context)
-
+        Spacer(modifier = Modifier.height(12.dp))
+        
         Button(onClick = { navController.navigate("all-devices") }) {
             Text(text = "Connected devices")
         }
-        
+        Spacer(modifier = Modifier.height(16.dp))
         BluetoothPart(
             bluetoothScanner,
             bluetoothResults,
@@ -118,7 +111,8 @@ fun BluetoothPart(
             },
             enabled = !enableRefresh
         ) {
-            Text(text = "Rescan")
+
+            Text(text = "Scan for devices")
         }
         if (enableRefresh)
             CircularProgressIndicator(
@@ -140,15 +134,17 @@ fun BluetoothPart(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp, horizontal = 6.dp)
+                            .padding(vertical = 8.dp, horizontal = 12.dp)
                     ) {
-                        Text(text = "Address:")
-                        device.address?.let { address ->
-                            Text(text = address)
+                        Row(
+                            Modifier.fillMaxWidth()
+                        ) {
+                            Text(text = "Address: ")
+                            device.address?.let { address ->
+                                Text(text = address)
+                            }
                         }
-
                         Spacer(modifier = Modifier.height(4.dp))
-
                         Row(
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -157,7 +153,6 @@ fun BluetoothPart(
                                 Text(text = deviceName)
                             }
                         }
-                        Text(text = "Type: ${device.type}")
                     }
                 }
             }

@@ -12,9 +12,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,12 +29,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.hubwifiv2.utils.csv.CSVUtils
 import com.example.hubwifiv2.utils.dataClasses.devices.GeneralDevice
 import com.example.hubwifiv2.utils.viewModels.HubViewModel
 
 @Composable
-fun AllDevicesScreen(){
+fun AllDevicesScreen(navController: NavController){
 
     val context = LocalContext.current
     val csvUtils = CSVUtils(context)
@@ -43,10 +46,15 @@ fun AllDevicesScreen(){
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Text(text = "All Devices")
+        Text(
+            text = "All Devices",
+            style = MaterialTheme.typography.headlineSmall
+        )
+        Spacer(modifier = Modifier.height(12.dp))
 
         LazyColumn{
             items(devices){device ->
@@ -69,6 +77,10 @@ fun AllDevicesScreen(){
             }
         }
 
+        Spacer(modifier = Modifier.weight(1f))
+        Button(onClick = { navController.navigate("home") }) {
+            Text(text = "Return to homepage")
+        }
     }
 
 }
