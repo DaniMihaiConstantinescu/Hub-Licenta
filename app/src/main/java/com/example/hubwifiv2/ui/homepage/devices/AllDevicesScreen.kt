@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.hubwifiv2.ui.icons.RenderDeviceIcon
 import com.example.hubwifiv2.utils.csv.CSVUtils
 import com.example.hubwifiv2.utils.dataClasses.devices.GeneralDevice
 import com.example.hubwifiv2.utils.viewModels.HubViewModel
@@ -96,9 +97,10 @@ fun DeviceCard(device: GeneralDevice){
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(text = device.name, fontWeight = FontWeight.Bold)
-                Text(text = device.type)
+//                Text(text = device.type)
+                RenderDeviceIcon(deviceType = device.type)
             }
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Text(text = "Address: ${device.deviceMAC}")
         }
     }
