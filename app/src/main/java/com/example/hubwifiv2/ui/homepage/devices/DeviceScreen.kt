@@ -11,9 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -23,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -63,16 +67,32 @@ fun DeviceScreen(
         }
 
         if (!startedConnect || isConnecting) {
+            Spacer(modifier = Modifier.height(36.dp))
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ){
-                Spacer(modifier = Modifier.height(12.dp))
-                Button(enabled = !isConnecting, onClick = {
-                    bluetoothManager.scanForDevice(address)
-                    startedConnect = true
-                    isConnecting = true
-                }) {
+                Button(
+                    onClick = {
+                        bluetoothManager.stopScan()
+                        bluetoothManager.disconnect()
+                        navController.navigate("home")
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                ) {
+                    Text(text = "Cancel", color = Color.White)
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Button(
+                    enabled = !isConnecting,
+                    shape = RoundedCornerShape(12.dp),
+                    onClick = {
+                        bluetoothManager.scanForDevice(address)
+                        startedConnect = true
+                        isConnecting = true
+                    }
+                ) {
                     Text(text = "Connect")
                 }
             }
@@ -80,11 +100,11 @@ fun DeviceScreen(
 
         if (startedConnect) {
             if (isConnecting) {
+                Spacer(modifier = Modifier.height(36.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Spacer(modifier = Modifier.height(36.dp))
                     CircularProgressIndicator()
                 }
             }
@@ -112,15 +132,45 @@ fun DeviceScreen(
                     }
                     
                     Spacer(modifier = Modifier.weight(1f))
-                    Button(onClick = {
-                        if (deviceName == "") {
-                            Toast.makeText(context, "The name of the device needs to be completed", Toast.LENGTH_SHORT).show()
+
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = {
+                                bluetoothManager.disconnect()
+                                navController.navigate("home")
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                        ) {
+                            Text(text = "Cancel", color = Color.White)
                         }
-                        else{
-                            addDevice(context, navController, deviceViewModel, address, deviceName, deviceType)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Button(
+                            onClick = {
+                                if (deviceName == "") {
+                                    Toast.makeText(
+                                        context,
+                                        "The name of the device needs to be completed",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    addDevice(
+                                        context,
+                                        navController,
+                                        deviceViewModel,
+                                        address,
+                                        deviceName,
+                                        deviceType
+                                    )
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                        ) {
+                            Text(text = "Add Device")
                         }
-                    }) {
-                        Text(text = "Add Device")
                     }
                 }
             }
