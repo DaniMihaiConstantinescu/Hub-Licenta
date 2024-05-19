@@ -51,9 +51,9 @@ class MainActivity : ComponentActivity() {
         tcpClient = TCPClient(applicationContext ,applicationContext.getString(R.string.server_ip), 9090)
 
         GlobalScope.launch {
-            tcpClient.connectToServer()
-            Log.e("TCP", "init")
-            sendInitializeMessageTCP(tcpClient, getAndroidId(applicationContext))
+            tcpClient.connectToServer(after = {
+                sendInitializeMessageTCP(tcpClient, getAndroidId(applicationContext))
+            })
         }
         
         bluetoothScanner = BluetoothScanner(this)

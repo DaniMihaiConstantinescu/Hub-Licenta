@@ -20,7 +20,7 @@ class TCPClient (appContext: Context ,private val serverIp: String, private val 
 
     private val context = appContext
 
-    fun connectToServer() {
+    fun connectToServer(after: () -> Unit = {} ) {
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 socket = Socket(serverIp, serverPort)
@@ -30,6 +30,7 @@ class TCPClient (appContext: Context ,private val serverIp: String, private val 
 
                 // Continuously listen for incoming data
                 listenForData()
+                after()
             } catch (e: Exception) {
                 e.printStackTrace()
                 Log.e("TCP", e.toString())
@@ -46,13 +47,18 @@ class TCPClient (appContext: Context ,private val serverIp: String, private val 
                     val bytesRead = bufferedReader.read(charBuffer)
                     if (bytesRead != -1) {
                         val receivedData = String(charBuffer, 0, bytesRead)
-                        Log.e("TCP", "Received data from server: $receivedData")
+                        Log.i("TCP", "Received data from server: $receivedData")
 
                         // parse the data and forward it to the device
                         val gson = Gson()
                         val tcpMessage = gson.fromJson(receivedData, TCPMessage::class.java)
-                        forwardMessageToDevice(context, tcpMessage)
-
+                        GlobalScope.launch {
+                            try {
+                                forwardMessageToDevice(context, tcpMessage)
+                            } catch (e: Exception) {
+                                Log.e("TCP", "Error forwarding message to device: ${e.message}")
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {
