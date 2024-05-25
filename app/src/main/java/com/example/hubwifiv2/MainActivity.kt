@@ -4,33 +4,51 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.hubwifiv2.ui.auth.SignInScreen
 import com.example.hubwifiv2.ui.homepage.HomeScreen
 import com.example.hubwifiv2.ui.homepage.devices.AllDevicesScreen
 import com.example.hubwifiv2.ui.homepage.devices.DeviceScreen
 import com.example.hubwifiv2.ui.theme.HubWifiV2Theme
+import com.example.hubwifiv2.utils.auth.SignInViewModel
+import com.example.hubwifiv2.utils.auth.logic.GoogleUiClient
 import com.example.hubwifiv2.utils.ble.BluetoothScanner
 import com.example.hubwifiv2.utils.permissionHandling.LocationPermission
 import com.example.hubwifiv2.utils.tcp.TCPClient
 import com.example.hubwifiv2.utils.tcp.getAndroidId
 import com.example.hubwifiv2.utils.tcp.sendInitializeMessageTCP
+import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
+    private val googleAuthUiClient by lazy {
+        GoogleUiClient(
+            context = applicationContext,
+            oneTapClient = Identity.getSignInClient(applicationContext)
+        )
+    }
 
     private lateinit var tcpClient: TCPClient
 
@@ -71,8 +89,47 @@ class MainActivity : ComponentActivity() {
                         val navController = rememberNavController()
                         NavHost(
                             navController = navController,
-                            startDestination = "home"
+                            startDestination = "sign_in"
                         ){
+                            composable("sign_in") {
+                                val viewModel = viewModel<SignInViewModel>()
+                                val state by viewModel.state.collectAsStateWithLifecycle()
+
+                                val launcher = rememberLauncherForActivityResult(
+                                    contract = ActivityResultContracts.StartIntentSenderForResult(),
+                                    onResult = {result ->
+                                        if (result.resultCode == RESULT_OK) {
+                                            lifecycleScope.launch {
+                                                val signInResult = googleAuthUiClient.signInWithIntent(
+                                                    intent = result.data ?: return@launch
+                                                )
+                                                viewModel.onSingInResult(signInResult)
+                                            }
+                                        }
+                                    }
+                                )
+
+                                LaunchedEffect(key1 = state.isSignInSuccessful) {
+                                    if (state.isSignInSuccessful) {
+                                        navController.navigate("home")
+                                        viewModel.resetState()
+                                    }
+                                }
+
+                                SignInScreen(
+                                    state = state,
+                                    onSignInClick = {
+                                        lifecycleScope.launch {
+                                            val signInIntentSender = googleAuthUiClient.signIn()
+                                            launcher.launch(
+                                                IntentSenderRequest.Builder(
+                                                    signInIntentSender ?: return@launch
+                                                ).build()
+                                            )
+                                        }
+                                    }
+                                )
+                            }
                             composable("home"){
                                 HomeScreen(
                                     navController,
