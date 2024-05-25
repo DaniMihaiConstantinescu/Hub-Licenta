@@ -114,10 +114,10 @@ fun DeviceScreen(
                 ) {
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    if (deviceName == "")
-                        Text(text = "Bluetooth name: Unknown")
-                    else
-                        Text(text = "Bluetooth name: $deviceName")
+//                    if (deviceName == "")
+//                        Text(text = "Bluetooth name: Unknown")
+//                    else
+//                        Text(text = "Bluetooth name: $deviceName")
 
                     Text(text = "Type: $deviceType")
 
