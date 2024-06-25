@@ -1,6 +1,9 @@
 package com.example.hubwifiv2.utils.tcp
 
+import android.content.Context
 import android.util.Log
+import com.example.hubwifiv2.utils.dataClasses.tcp.TCPMessage
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -9,25 +12,28 @@ import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.Socket
 
-class TCPClient (private val serverIp: String, private val serverPort: Int) {
+class TCPClient (appContext: Context ,private val serverIp: String, private val serverPort: Int) {
 
     private var socket: Socket? = null
     private var reader: BufferedReader? = null
     private var writer: PrintWriter? = null
 
-    fun connectToServer() {
+    private val context = appContext
+
+    fun connectToServer(after: () -> Unit = {} ) {
         GlobalScope.launch(Dispatchers.IO) {
             try {
                 socket = Socket(serverIp, serverPort)
-                Log.i("TCP CONNECT", "Connected to server: $serverIp:$serverPort")
+                Log.i("TCP", "Connected to server: $serverIp:$serverPort")
                 reader = BufferedReader(InputStreamReader(socket?.getInputStream()))
                 writer = PrintWriter(socket?.getOutputStream(), true)
 
                 // Continuously listen for incoming data
                 listenForData()
+                after()
             } catch (e: Exception) {
                 e.printStackTrace()
-                Log.e("ERROR TCP", e.toString())
+                Log.e("TCP", e.toString())
             }
         }
     }
@@ -41,7 +47,18 @@ class TCPClient (private val serverIp: String, private val serverPort: Int) {
                     val bytesRead = bufferedReader.read(charBuffer)
                     if (bytesRead != -1) {
                         val receivedData = String(charBuffer, 0, bytesRead)
-                        Log.e("TCP Listen", "Received data from server: $receivedData")
+                        Log.i("TCP", "Received data from server: $receivedData")
+
+                        // parse the data and forward it to the device
+                        val gson = Gson()
+                        val tcpMessage = gson.fromJson(receivedData, TCPMessage::class.java)
+                        GlobalScope.launch {
+                            try {
+                                forwardMessageToDevice(context, tcpMessage)
+                            } catch (e: Exception) {
+                                Log.e("TCP", "Error forwarding message to device: ${e.message}")
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {

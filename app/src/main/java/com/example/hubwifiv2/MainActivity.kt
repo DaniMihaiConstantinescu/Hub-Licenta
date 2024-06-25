@@ -1,76 +1,85 @@
 package com.example.hubwifiv2
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.net.wifi.ScanResult
+import android.bluetooth.BluetoothDevice
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.hubwifiv2.ui.homepage.wifi.WiFiList
-import com.example.hubwifiv2.ui.homepage.wifi.WifiScreen
+import com.example.hubwifiv2.ui.auth.SignInScreen
+import com.example.hubwifiv2.ui.homepage.HomeScreen
+import com.example.hubwifiv2.ui.homepage.devices.AllDevicesScreen
+import com.example.hubwifiv2.ui.homepage.devices.DeviceScreen
 import com.example.hubwifiv2.ui.theme.HubWifiV2Theme
-import com.example.hubwifiv2.utils.wifi.WifiHandler
-import com.example.hubwifiv2.utils.dataClasses.devices.GeneralDevice
+import com.example.hubwifiv2.utils.auth.SignInViewModel
+import com.example.hubwifiv2.utils.auth.logic.GoogleUiClient
+import com.example.hubwifiv2.utils.ble.BluetoothScanner
+import com.example.hubwifiv2.utils.permissionHandling.LocationPermission
 import com.example.hubwifiv2.utils.tcp.TCPClient
 import com.example.hubwifiv2.utils.tcp.getAndroidId
 import com.example.hubwifiv2.utils.tcp.sendInitializeMessageTCP
-import com.example.hubwifiv2.utils.tcp.sendMessageTCP
-import com.example.hubwifiv2.utils.viewModels.HubViewModel
+import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
+    private val googleAuthUiClient by lazy {
+        GoogleUiClient(
+            context = applicationContext,
+            oneTapClient = Identity.getSignInClient(applicationContext)
+        )
+    }
+
     private lateinit var tcpClient: TCPClient
 
-    private lateinit var wifiHandler: WifiHandler
-    private var wifiResults by mutableStateOf<List<ScanResult>>(emptyList())
-    private var isLoading by mutableStateOf(false)
+    private val REQUEST_CODE_BLUETOOTH  = 101
+    private val bluetoothResults = mutableSetOf<BluetoothDevice>()
+    private lateinit var bluetoothScanner: BluetoothScanner
 
+    private lateinit var locationPermission: LocationPermission
 
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // initialize tcp server and wifi handler
-        tcpClient = TCPClient("192.168.1.100", 9090)
+        locationPermission = LocationPermission(this)
+
+        // initialize tcp server and bluetooth handler
+        tcpClient = TCPClient(applicationContext ,applicationContext.getString(R.string.server_ip), 9090)
+
         GlobalScope.launch {
-            tcpClient.connectToServer()
-            sendInitializeMessageTCP(tcpClient, getAndroidId(applicationContext))
+            tcpClient.connectToServer(after = {
+                sendInitializeMessageTCP(tcpClient, getAndroidId(applicationContext))
+            })
         }
-        wifiHandler = WifiHandler(
-            this,
-            updateResults = { wifiResults = it },
-            changeLoading = { isLoading = it }
-        )
+        
+        bluetoothScanner = BluetoothScanner(this)
+        bluetoothScanner.onDeviceFound = { device ->
+            bluetoothResults.add(device)
+        }
 
         setContent {
-
-
             HubWifiV2Theme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -80,25 +89,65 @@ class MainActivity : ComponentActivity() {
                         val navController = rememberNavController()
                         NavHost(
                             navController = navController,
-                            startDestination = "home"
+                            startDestination = "sign_in"
                         ){
-                            composable("home"){
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(horizontal = 20.dp)
-                                ) {
-                                    TCPTest(tcpClient, applicationContext)
-                                    DevicesButtons(applicationContext)
+                            composable("sign_in") {
+                                val viewModel = viewModel<SignInViewModel>()
+                                val state by viewModel.state.collectAsStateWithLifecycle()
 
-                                    WiFiList(wifiResults, isLoading, navController)
+                                val launcher = rememberLauncherForActivityResult(
+                                    contract = ActivityResultContracts.StartIntentSenderForResult(),
+                                    onResult = {result ->
+                                        if (result.resultCode == RESULT_OK) {
+                                            lifecycleScope.launch {
+                                                val signInResult = googleAuthUiClient.signInWithIntent(
+                                                    intent = result.data ?: return@launch
+                                                )
+                                                viewModel.onSingInResult(signInResult)
+                                            }
+                                        }
+                                    }
+                                )
+
+                                LaunchedEffect(key1 = state.isSignInSuccessful) {
+                                    if (state.isSignInSuccessful) {
+                                        navController.navigate("home")
+                                        viewModel.resetState()
+                                    }
                                 }
+
+                                SignInScreen(
+                                    state = state,
+                                    onSignInClick = {
+                                        lifecycleScope.launch {
+                                            val signInIntentSender = googleAuthUiClient.signIn()
+                                            launcher.launch(
+                                                IntentSenderRequest.Builder(
+                                                    signInIntentSender ?: return@launch
+                                                ).build()
+                                            )
+                                        }
+                                    }
+                                )
                             }
-                            composable("wifi/{addr}"){backStackEntry ->
+                            composable("home"){
+                                HomeScreen(
+                                    navController,
+                                    bluetoothScanner,
+                                    bluetoothResults,
+                                    clearResults = {
+                                        bluetoothResults.clear()
+                                    }
+                                )
+                            }
+                            composable("device/{addr}"){backStackEntry ->
                                 val addr = backStackEntry.arguments?.getString("addr")
                                 addr?.let {
-                                    WifiScreen(SSID = addr)
+                                    DeviceScreen(addr, navController)
                                 }
+                            }
+                            composable("all-devices"){
+                                AllDevicesScreen(navController)
                             }
                         }
                     }
@@ -106,73 +155,57 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Check and request location permission
-        wifiHandler.checkAndRequestLocationPermission()
+        // Check and request location && bluetooth permissions
+        locationPermission.checkAndRequestLocationPermission()
+        requestBluetoothPermission()
     }
 
+    private fun checkBluetoothEnabled() {
+        if (bluetoothScanner.isBluetoothEnabled()) {
+            // Bluetooth is enabled, start scanning
+            bluetoothScanner.startScan()
+        } else {
+        }
+    }
+
+    private fun requestBluetoothPermission() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+            ) {
+            ActivityCompat.requestPermissions(this, arrayOf(
+                android.Manifest.permission.BLUETOOTH,
+                android.Manifest.permission.BLUETOOTH_SCAN,
+                android.Manifest.permission.BLUETOOTH_CONNECT,
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ), REQUEST_CODE_BLUETOOTH)
+        } else {
+            checkBluetoothEnabled()
+        }
+    }
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_BLUETOOTH) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // bluetoothScanner.startScan()
+            } else {
+                // Handle permission denied case (optional)
+            }
+        }
+    }
+    override fun onResume() {
+        super.onResume()
+        requestBluetoothPermission()
+    }
+    override fun onPause() {
+        super.onPause()
+        bluetoothScanner.stopScan()
+    }
     override fun onDestroy() {
         super.onDestroy()
+        bluetoothScanner.stopScan()
         tcpClient.disconnect()
     }
 
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TCPTest(
-    tcpClient: TCPClient,
-    context: Context
-){
-
-    var text by remember {
-        mutableStateOf("")
-    }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 50.dp)
-    ) {
-        Button(onClick = {
-            val macAddr = getAndroidId(context)
-            sendMessageTCP(tcpClient, macAddr, "1.1.1.1", mapOf("temp" to "20"))
-        }) {
-            Text(text = "Send")
-        }
-        TextField(value = text, onValueChange = {text = it})
-    }
-
-}
-
-@Composable
-fun DevicesButtons(context: Context){
-
-    val deviceViewModel = viewModel<HubViewModel>()
-    val hubId = getAndroidId(context)
-
-    Row {
-        Button(onClick = {
-            deviceViewModel.addDeviceToHub(
-                hubId,
-                GeneralDevice(
-                    deviceMAC = "mac1",
-                    hubMac = hubId,
-                    type = "ac",
-                    name = "Device 1"
-                )
-            )
-        }) {
-            Text(text = "Add")
-        }
-
-
-        Button(onClick = {
-            deviceViewModel.deleteDeviceFromHub(
-                hubId,
-                "mac1"
-            )
-        }) {
-            Text(text = "Remove")
-        }
-    }
 }
