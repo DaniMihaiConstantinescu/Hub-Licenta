@@ -59,6 +59,7 @@ fun DeviceScreen(
     Column(
         Modifier.padding(vertical = 12.dp, horizontal = 20.dp)
     ) {
+        Spacer(modifier = Modifier.height(32.dp))
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center

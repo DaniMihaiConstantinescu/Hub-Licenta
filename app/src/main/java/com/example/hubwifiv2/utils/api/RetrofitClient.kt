@@ -7,7 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-    private const val currentIp = "192.168.65.40"
+    private const val currentIp = "192.168.1.101"
     private const val baseUrl = "http://$currentIp:5000"
 
     private val retrofit: Retrofit by lazy {

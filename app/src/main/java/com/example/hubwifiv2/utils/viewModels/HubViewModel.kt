@@ -1,20 +1,34 @@
 package com.example.hubwifiv2.utils.viewModels
 
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hubwifiv2.utils.api.RetrofitClient
 import com.example.hubwifiv2.utils.dataClasses.devices.GeneralDevice
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
 class HubViewModel :ViewModel(){
 
+    val auth = Firebase.auth
+    private var userId by mutableStateOf("")
+
+    init {
+        auth.currentUser?.run {
+            userId = uid
+        }
+    }
+
     fun addDeviceToHub(hubMac: String, newDevice: GeneralDevice) {
         viewModelScope.launch {
             try {
                 // Make the API call to add the device to the room
-                val response = RetrofitClient.hubServices.addDeviceToHub("1", hubMac, newDevice)
+                val response = RetrofitClient.hubServices.addDeviceToHub(userId, hubMac, newDevice)
                 if (response.isSuccessful) {
 
                 } else {

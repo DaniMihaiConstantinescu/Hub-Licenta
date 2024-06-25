@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">HubApp</string>
     <string name="web_client_id">974771303731-tmv77qkmtu5ioolcbhinmk6aimgkvos1.apps.googleusercontent.com</string>
-    <string name="server_ip">192.168.1.103</string>
+    <string name="server_ip">192.168.1.101</string>
 </resources>
